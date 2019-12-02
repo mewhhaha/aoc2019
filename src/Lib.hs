@@ -25,10 +25,7 @@ day1examples =
 fuelreq :: Integer -> Integer
 fuelreq = max 0 . (subtract 2) . (`div` 3)
 
-fuelreqrec = go 0
-  where
-    go sum 0 = sum
-    go sum (fuelreq -> x) = go (x + sum) x
+fuelreqrec = sum . takeWhile (> 0) . iterate fuelreq . fuelreq
 
 day1 :: IO ()
 day1 = do

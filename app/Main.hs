@@ -4,5 +4,5 @@ import Lib
 
 main :: IO ()
 main = do
-  -- day1
-  day2
+  day1
+-- day2
