@@ -16,7 +16,6 @@ test :: (Show a, Show b, Eq b) => (a -> b) -> [(a, b)] -> IO ()
 test f = mapM_ (\t@(q, a) -> pretty t (f q) a)
 
 -- Day 1
-
 day1examples =
   [ (3, 0),
     (12, 2),
@@ -28,7 +27,7 @@ day1examples =
 fuelreq :: Integer -> Integer
 fuelreq = max 0 . (subtract 2) . (`div` 3)
 
-fuelreqfix = go 0
+fuelreqrec = go 0
   where
     go sum 0 = sum
     go sum (fuelreq -> x) = go (x + sum) x
@@ -37,7 +36,7 @@ day1 :: IO ()
 day1 = do
   -- test fuelreq day1examples
   numbers <- lines <$> readFile "input/day1.txt"
-  let result = sum . fmap (fuelreqfix . read) $ numbers
+  let result = sum . fmap (fuelreqrec . read) $ numbers
   putStrLn . show $ result
 
 -- Day 2
@@ -47,8 +46,8 @@ interpret :: Int -> Int -> Map.Map Int Int -> Int
 interpret noun verb = go 0 . Map.insert 1 noun . Map.insert 2 verb
   where
     go i mem =
-      let [m1, m2, p, x, y] = (mem Map.!) <$> [i + 1, i + 2, i + 3, m1, m2]
-          apply op = go (i + 4) $ Map.insert p (x `op` y) mem
+      let [m1, m2, m3, x, y] = (mem Map.!) <$> [i + 1, i + 2, i + 3, m1, m2]
+          apply op = go (i + 4) $ Map.insert m3 (x `op` y) mem
        in case mem Map.! i of
             1 -> apply (+)
             2 -> apply (*)
