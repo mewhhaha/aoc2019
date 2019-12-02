@@ -40,10 +40,10 @@ day2examples = [([1, 9, 10, 3, 2, 3, 11, 0, 99, 30, 40, 50], 3500)]
 interpret :: Int -> Int -> Map.Map Int Int -> Int
 interpret noun verb = go 0 . Map.insert 1 noun . Map.insert 2 verb
   where
-    go i mem =
-      let [m1, m2, m3, x, y] = (mem Map.!) <$> [i + 1, i + 2, i + 3, m1, m2]
-          apply op = go (i + 4) $ Map.insert m3 (x `op` y) mem
-       in case mem Map.! i of
+    go m0 mem =
+      let [m1, m2, m3, x, y] = (mem Map.!) <$> [m0 + 1, m0 + 2, m0 + 3, m1, m2]
+          apply op = go (m0 + 4) $ Map.insert m3 (x `op` y) mem
+       in case mem Map.! m0 of
             1 -> apply (+)
             2 -> apply (*)
             99 -> finish
