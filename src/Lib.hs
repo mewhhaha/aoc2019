@@ -1,5 +1,3 @@
-{-# LANGUAGE RecursiveDo #-}
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Lib where
