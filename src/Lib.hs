@@ -57,7 +57,7 @@ memory = Map.fromList . zip [0 ..]
 
 day2 :: IO ()
 day2 = do
-  -- test run day2examples
+  -- test interpret day2examples
   mem <- memory . fmap read . splitOn "," <$> readFile "input/day2.txt"
   -- let result = interpret 12 2 mem
   let result =
