@@ -70,6 +70,7 @@ day2 = do
 -- Day 3
 
 data Wire = R Int | L Int | U Int | D Int
+  deriving (Show, Read)
 
 day3examples =
   [ ( [ [R 8, U 5, L 5, D 3],
@@ -89,18 +90,66 @@ day3examples =
     )
   ]
 
-follow = go Map.empty
+day3examples2 =
+  [ ( [ [R 8, U 5, L 5, D 3],
+        [U 7, R 6, D 4, L 4]
+      ],
+      30
+    ),
+    ( [ [R 75, D 30, R 83, U 83, L 12, D 49, R 71, U 7, L 72],
+        [U 62, R 66, U 55, R 34, D 71, R 55, D 58, R 83]
+      ],
+      610
+    ),
+    ( [ [R 98, U 47, R 26, D 63, R 33, U 87, L 62, D 20, R 33, U 53, R 51],
+        [U 98, R 91, D 20, R 16, D 67, R 40, U 7, R 15, U 6, R 7]
+      ],
+      410
+    )
+  ]
+
+manhattan (x, y) = abs x + abs y
+
+sign x
+  | x < 0 = -1
+  | x > 0 = 1
+  | otherwise = 0
+
+points (x, y) to@(x', y')
+  | x /= x' = next (x + sign (x' - x), y)
+  | y /= y' = next (x, y + sign (y' - y))
+  | otherwise = []
   where
-    go board xs = undefined
-    draw (x, y) =
-      let draw xs ys = Map.fromList (zip (zip xs ys) (repeat [1]))
-          drawX to = draw [x .. to] (repeat y)
-          drawY to = draw (repeat x) [y .. to]
-       in \case
-            R d -> drawX (x + d)
-            L d -> drawX (x - d)
-            U d -> drawY (y + d)
-            D d -> drawY (y - d)
+    next coords = coords : points coords to
+
+follow :: [Wire] -> Map.Map (Int, Int) [Int]
+follow = go 1 (0, 0)
+  where
+    go i _ [] = mempty
+    go i pos@(x, y) (w : ws) =
+      let to = case w of
+            R d -> (x + d, y)
+            L d -> (x - d, y)
+            U d -> (x, y + d)
+            D d -> (x, y - d)
+          ps = (points pos to)
+          wire = Map.fromList $ zip ps (fmap (\x -> [x]) (iterate (+ 1) i))
+       in Map.union wire $ go (i + length ps) to ws
+
+crossings :: [Map.Map (Int, Int) [Int]] -> [((Int, Int), [Int])]
+crossings = filter ((> 1) . length . snd) . Map.toList . foldl1 (Map.unionWith (++))
+
+closest :: [[Wire]] -> Int
+closest = head . sort . fmap (manhattan . fst) . crossings . fmap follow
+
+fastest :: [[Wire]] -> Int
+fastest = head . sort . fmap (sum . snd) . crossings . fmap follow
 
 day3 = do
-  test follow day3examples
+  -- test closest day3examples
+  let parse (d : n) = read ([d] ++ " " ++ n)
+  wires <- fmap (fmap parse . splitOn ",") . lines <$> readFile "input/day3.txt"
+  -- let result = closest wires
+  -- test fastest day3examples2
+  let result = fastest wires
+  putStrLn $ show result
