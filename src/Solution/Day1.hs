@@ -31,6 +31,7 @@ solve1 = do
 
 -- Question 2
 
+fuelreqrec :: Integer -> Integer
 fuelreqrec = sum . takeWhile (> 0) . tail . iterate fuelreq
 
 solve2 :: IO ()
