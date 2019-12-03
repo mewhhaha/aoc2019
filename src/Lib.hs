@@ -1,3 +1,4 @@
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE ViewPatterns #-}
 
 module Lib where
@@ -65,3 +66,41 @@ day2 = do
               interpret n v mem == 19690720
           ]
   putStrLn . show $ result
+
+-- Day 3
+
+data Wire = R Int | L Int | U Int | D Int
+
+day3examples =
+  [ ( [ [R 8, U 5, L 5, D 3],
+        [U 7, R 6, D 4, L 4]
+      ],
+      6
+    ),
+    ( [ [R 75, D 30, R 83, U 83, L 12, D 49, R 71, U 7, L 72],
+        [U 62, R 66, U 55, R 34, D 71, R 55, D 58, R 83]
+      ],
+      159
+    ),
+    ( [ [R 98, U 47, R 26, D 63, R 33, U 87, L 62, D 20, R 33, U 53, R 51],
+        [U 98, R 91, D 20, R 16, D 67, R 40, U 7, R 15, U 6, R 7]
+      ],
+      135
+    )
+  ]
+
+follow = go Map.empty
+  where
+    go board xs = undefined
+    draw (x, y) =
+      let draw xs ys = Map.fromList (zip (zip xs ys) (repeat [1]))
+          drawX to = draw [x .. to] (repeat y)
+          drawY to = draw (repeat x) [y .. to]
+       in \case
+            R d -> drawX (x + d)
+            L d -> drawX (x - d)
+            U d -> drawY (y + d)
+            D d -> drawY (y - d)
+
+day3 = do
+  test follow day3examples
