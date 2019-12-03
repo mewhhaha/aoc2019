@@ -1,9 +1,6 @@
 module Main where
 
-import Lib
+import Test
 
 main :: IO ()
-main = do
-  -- day1
-  -- day2
-  day3
+main = putStrLn "Hello World"
