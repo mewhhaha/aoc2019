@@ -26,7 +26,7 @@ day1examples =
 fuelreq :: Integer -> Integer
 fuelreq = max 0 . (subtract 2) . (`div` 3)
 
-fuelreqrec = sum . takeWhile (> 0) . iterate fuelreq . fuelreq
+fuelreqrec = sum . takeWhile (> 0) . tail . iterate fuelreq
 
 day1 :: IO ()
 day1 = do
