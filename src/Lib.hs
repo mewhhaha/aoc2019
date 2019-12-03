@@ -133,7 +133,7 @@ follow = go 1 (0, 0)
             U d -> (x, y + d)
             D d -> (x, y - d)
           line = (points pos to)
-          wire = Map.fromList $ zip line ((: []) <$> (iterate (+ 1) i))
+          wire = Map.fromList $ zip line ((: []) <$> [i, i + 1 ..])
        in Map.union wire $ go (i + length line) to ws
 
 crossings :: [Map.Map (Int, Int) [Int]] -> [((Int, Int), [Int])]
