@@ -19,7 +19,7 @@ day1examples =
   ]
 
 fuelreq :: Integer -> Integer
-fuelreq = max 0 . (subtract 2) . (`div` 3)
+fuelreq = max 0 . (\x -> x `div` 3 - 2)
 
 test :: IO ()
 test = Test.run fuelreq day1examples
