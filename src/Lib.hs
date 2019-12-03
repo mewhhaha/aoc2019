@@ -132,9 +132,9 @@ follow = go 1 (0, 0)
             L d -> (x - d, y)
             U d -> (x, y + d)
             D d -> (x, y - d)
-          ps = (points pos to)
-          wire = Map.fromList $ zip ps (fmap (\x -> [x]) (iterate (+ 1) i))
-       in Map.union wire $ go (i + length ps) to ws
+          line = (points pos to)
+          wire = Map.fromList $ zip line (fmap (\x -> [x]) (iterate (+ 1) i))
+       in Map.union wire $ go (i + length line) to ws
 
 crossings :: [Map.Map (Int, Int) [Int]] -> [((Int, Int), [Int])]
 crossings = filter ((> 1) . length . snd) . Map.toList . foldl1 (Map.unionWith (++))
