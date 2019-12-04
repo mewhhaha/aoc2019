@@ -13,21 +13,21 @@ day4examples1 =
     (123789, False)
   ]
 
-adjacent :: Int -> Bool
-adjacent = any ((> 1) . length) . group . show
+adjacent :: String -> Bool
+adjacent = any ((> 1) . length) . group
 
-increase :: Int -> Bool
-increase = (==) <$> show <*> sort . show
+increase :: String -> Bool
+increase = sort >>= (==)
 
-valid1 :: Int -> Bool
-valid1 n = all ($ n) [adjacent, increase]
+validate1 :: Int -> Bool
+validate1 n = all ($ show n) [adjacent, increase]
 
 test1 :: IO ()
-test1 = Test.run valid1 day4examples1
+test1 = Test.run validate1 day4examples1
 
 solve1 :: IO ()
 solve1 =
-  let result = sum [1 | n <- [from .. to], valid1 n]
+  let result = sum [1 | n <- [from .. to], validate1 n]
    in putStrLn $ show result
 
 -- Question 2
@@ -38,16 +38,16 @@ day4examples2 =
     (111122, True)
   ]
 
-doubles :: Int -> Bool
-doubles = any ((== 2) . length) . group . show
+doubles :: String -> Bool
+doubles = any ((== 2) . length) . group
 
-valid2 :: Int -> Bool
-valid2 n = all ($ n) [doubles, increase]
+validate2 :: Int -> Bool
+validate2 n = all ($ show n) [doubles, increase]
 
 test2 :: IO ()
-test2 = Test.run valid2 day4examples2
+test2 = Test.run validate2 day4examples2
 
 solve2 :: IO ()
 solve2 =
-  let result = sum [1 | n <- [from .. to], valid2 n]
+  let result = sum [1 | n <- [from .. to], validate2 n]
    in putStrLn $ show result
