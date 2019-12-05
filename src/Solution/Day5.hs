@@ -100,9 +100,12 @@ store = (modify .) . Map.insert
 view :: Member (State Memory) r => Int -> Sem r Int
 view = gets . flip (Map.!)
 
+record :: Member (Writer [Int]) r => Int -> Sem r ()
+record = tell . (: [])
+
 runProgram :: Members [State Int, State Memory, Writer [Int]] r => Int -> Sem (Program : r) a -> Sem r a
 runProgram id = interpret $ \case
-  Spit x -> tell @[Int] [x]
+  Spit x -> record x
   Yes x m -> if x /= 0 then jump m else pure ()
   No x m -> if x == 0 then jump m else pure ()
   Swallow x -> store x id
