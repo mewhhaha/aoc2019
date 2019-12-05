@@ -22,7 +22,8 @@ dependencies:
 - base >= 4.7 && < 5
 - containers
 - split
-
+- polysemy
+- polysemy-plugin
 library:
   source-dirs: src
 
@@ -34,5 +35,6 @@ executables:
     - -threaded
     - -rtsopts
     - -with-rtsopts=-N
+    - -fplugin=Polysemy.Plugin
     dependencies:
     - aoc2019
