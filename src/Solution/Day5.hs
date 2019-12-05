@@ -61,11 +61,11 @@ modes = toInts . groupNegative . trailingZeros . dropOp . toDigits
     groupNegative = groupBy (\_ y -> y == '-')
     toInts = fmap (read . reverse)
 
-binop :: Member Program r => Int -> (Int -> Int -> Int) -> Sem r ()
-binop q op = process (take 2 $ modes q) >>= \[x, y] -> consume >>= \m -> memorize m (x `op` y)
-
 feed :: Member Program r => Int -> Int -> Sem r [Int]
 feed n q = process (take n $ modes q)
+
+binop :: Member Program r => Int -> (Int -> Int -> Int) -> Sem r ()
+binop q op = feed 2 q >>= \[x, y] -> consume >>= \m -> memorize m (x `op` y)
 
 program :: Member Program r => Sem r ()
 program = do
@@ -85,21 +85,30 @@ program = do
         8 -> binop q ((fromEnum .) . (==))
       continue
 
-next :: Member (State Int) r => Sem r Int
-next = do
+pop :: Member (State Int) r => Sem r Int
+pop = do
   x <- get
   modify @Int (+ 1)
   pure x
 
+jump :: Member (State Int) r => Int -> Sem r ()
+jump = put
+
+store :: Member (State Memory) r => Int -> Int -> Sem r ()
+store = (modify .) . Map.insert
+
+view :: Member (State Memory) r => Int -> Sem r Int
+view = gets . flip (Map.!)
+
 runProgram :: Members [State Int, State Memory, Writer [Int]] r => Int -> Sem (Program : r) a -> Sem r a
 runProgram id = interpret $ \case
   Spit x -> tell @[Int] [x]
-  Yes x m -> if x /= 0 then put @Int m else pure ()
-  No x m -> if x == 0 then put @Int m else pure ()
-  Swallow x -> modify @Memory (Map.insert x id)
-  Memorize m x -> modify @Memory (Map.insert m x)
-  Remember m -> gets @Memory (Map.! m)
-  Consume -> next >>= \m -> gets @Memory (Map.! m)
+  Yes x m -> if x /= 0 then jump m else pure ()
+  No x m -> if x == 0 then jump m else pure ()
+  Swallow x -> store x id
+  Memorize m x -> store m x
+  Remember m -> view m
+  Consume -> pop >>= view
   Die -> pure ()
 
 runAll :: Memory -> Int -> [Int]
