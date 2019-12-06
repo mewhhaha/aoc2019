@@ -22,15 +22,17 @@ import Polysemy.State
 import Polysemy.Writer
 import qualified Test
 
+data Variable = Value | Pointer
+
+data Opcode = Plus | Mul | Input | Output | LessThan | Equals | IfTrueJump | IfFalseJump | Terminate
+  deriving (Eq)
+
 data Program m a where
   Spit :: Int -> Program m ()
   Swallow :: Int -> Program m ()
   Memorize :: Int -> Int -> Program m ()
-  Remember :: Int -> Program m Int
-  Consume :: Program m Int
-  Yes :: Int -> Int -> Program m ()
-  No :: Int -> Int -> Program m ()
-  Die :: Program m ()
+  Consume :: Variable -> Program m Int
+  Jump :: Int -> Program m ()
 
 makeSem ''Program
 
@@ -44,81 +46,83 @@ input = memory . fmap read . splitOn "," <$> readFile "input/day5.txt"
 
 -- Question 1
 
-opcode :: Int -> Int
-opcode = read . reverse . take 2 . reverse . show
-
-parameters :: Int -> [Int]
-parameters = toInts . groupNegative . trailingZeros . dropOp . toDigits
+parseOpcode :: Int -> Opcode
+parseOpcode = toOpcode . read . reverse . take 2 . reverse . show
   where
-    toDigits = reverse . show
+    toOpcode = \case
+      99 -> Terminate
+      x -> [Plus, Mul, Input, Output, IfTrueJump, IfFalseJump, LessThan, Equals] !! (x - 1)
+
+parseVariables :: Int -> [Variable]
+parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
+  where
+    toDigits = show
+    leftToRight = reverse
     dropOp = drop 2
     trailingZeros = (++ repeat '0')
-    groupNegative = groupBy (\_ y -> y == '-')
-    toInts = fmap (read . reverse)
+    toVariables = fmap (toVariable)
+    toVariable = \case
+      '0' -> Pointer
+      '1' -> Value
 
-modes :: Member Program r => [Int] -> Sem r [Int]
-modes = mapM go
-  where
-    go = \case
-      0 -> consume >>= remember
-      1 -> consume
+modes :: Member Program r => [Variable] -> Sem r [Int]
+modes = mapM consume
 
-feed :: Member Program r => Int -> [Int] -> Sem r [Int]
-feed n params = modes (take n $ params)
+feed :: Member Program r => Int -> [Variable] -> Sem r [Int]
+feed n vars = modes (take n $ vars)
 
 save :: Member Program r => Int -> Sem r ()
 save v = do
-  m <- consume
+  m <- consume Value
   memorize m v
 
 program :: Members [Program, NonDet] r => Sem r ()
 program = do
-  let continue = program
-  (params, op) <- (parameters &&& opcode) <$> consume
-  if op == 99
-    then die
-    else do
-      case op of
-        1 -> do
-          [x, y] <- feed 2 params
+  (vars, opcode) <- (parseVariables &&& parseOpcode) <$> consume Value
+  case opcode of
+    Terminate -> pure ()
+    x -> do
+      case x of
+        Plus -> do
+          [x, y] <- feed 2 vars
           save (x + y)
-        2 -> do
-          [x, y] <- feed 2 params
+        Mul -> do
+          [x, y] <- feed 2 vars
           save (x * y)
-        3 -> do
-          m <- consume
+        Input -> do
+          m <- consume Value
           swallow m
-        4 -> do
-          [x] <- feed 1 params
+        Output -> do
+          [x] <- feed 1 vars
           spit x
-        5 -> do
-          [x, to] <- feed 2 params
-          yes x to
-        6 -> do
-          [x, to] <- feed 2 params
-          no x to
-        7 -> do
-          [x, y] <- feed 2 params
+        IfTrueJump -> do
+          [x, to] <- feed 2 vars
+          if x /= 0 then jump to else pure ()
+        IfFalseJump -> do
+          [x, to] <- feed 2 vars
+          if x == 0 then jump to else pure ()
+        LessThan -> do
+          [x, y] <- feed 2 vars
           save (if x < y then 1 else 0)
-        8 -> do
-          [x, y] <- feed 2 params
+        Equals -> do
+          [x, y] <- feed 2 vars
           save (if x == y then 1 else 0)
-      continue
+      program
 
-pop :: Member (State Int) r => Sem r Int
-pop = do
+step :: Member (State Int) r => Sem r Int
+step = do
   x <- get
-  modify @Int (+ 1)
+  put (x + 1)
   pure x
 
-jump :: Member (State Int) r => Int -> Sem r ()
-jump = put
+goto :: Member (State Int) r => Int -> Sem r ()
+goto = put
 
 store :: Member (State Memory) r => Int -> Int -> Sem r ()
 store = (modify .) . Map.insert
 
-view :: Member (State Memory) r => Int -> Sem r Int
-view = gets . flip (Map.!)
+from :: Member (State Memory) r => Int -> Sem r Int
+from = gets . flip (Map.!)
 
 record :: Member (Writer [Int]) r => Int -> Sem r ()
 record = tell . (: [])
@@ -126,13 +130,14 @@ record = tell . (: [])
 runProgram :: Members [State Int, State Memory, Writer [Int]] r => Int -> Sem (Program : r) a -> Sem r a
 runProgram id = interpret $ \case
   Spit x -> record x
-  Yes x m -> if x /= 0 then jump m else return ()
-  No x m -> if x == 0 then jump m else return ()
+  Jump m -> goto m
   Swallow x -> store x id
   Memorize m x -> store m x
-  Remember m -> view m
-  Consume -> pop >>= view
-  Die -> return ()
+  Consume var -> step
+    >>= from
+    >>= case var of
+      Value -> pure
+      Pointer -> from
 
 runAll :: Memory -> Int -> [Int]
 runAll mem id =
