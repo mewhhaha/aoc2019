@@ -126,13 +126,13 @@ record = tell . (: [])
 runProgram :: Members [State Int, State Memory, Writer [Int]] r => Int -> Sem (Program : r) a -> Sem r a
 runProgram id = interpret $ \case
   Spit x -> record x
-  Yes x m -> if x /= 0 then jump m else pure ()
-  No x m -> if x == 0 then jump m else pure ()
+  Yes x m -> if x /= 0 then jump m else return ()
+  No x m -> if x == 0 then jump m else return ()
   Swallow x -> store x id
   Memorize m x -> store m x
   Remember m -> view m
   Consume -> pop >>= view
-  Die -> pure ()
+  Die -> return ()
 
 runAll :: Memory -> Int -> [Int]
 runAll mem id =
