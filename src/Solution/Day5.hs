@@ -11,11 +11,13 @@
 
 module Solution.Day5 where
 
+import Control.Arrow
 import Data.List
 import Data.List.Split
 import qualified Data.Map as Map
 import Debug.Trace
 import Polysemy
+import Polysemy.NonDet
 import Polysemy.State
 import Polysemy.Writer
 import qualified Test
@@ -42,18 +44,11 @@ input = memory . fmap read . splitOn "," <$> readFile "input/day5.txt"
 
 -- Question 1
 
-process :: Member Program r => [Int] -> Sem r [Int]
-process = mapM go
-  where
-    go = \case
-      0 -> consume >>= remember
-      1 -> consume
-
 opcode :: Int -> Int
 opcode = read . reverse . take 2 . reverse . show
 
-modes :: Int -> [Int]
-modes = toInts . groupNegative . trailingZeros . dropOp . toDigits
+parameters :: Int -> [Int]
+parameters = toInts . groupNegative . trailingZeros . dropOp . toDigits
   where
     toDigits = reverse . show
     dropOp = drop 2
@@ -61,28 +56,53 @@ modes = toInts . groupNegative . trailingZeros . dropOp . toDigits
     groupNegative = groupBy (\_ y -> y == '-')
     toInts = fmap (read . reverse)
 
-feed :: Member Program r => Int -> Int -> Sem r [Int]
-feed n q = process (take n $ modes q)
+modes :: Member Program r => [Int] -> Sem r [Int]
+modes = mapM go
+  where
+    go = \case
+      0 -> consume >>= remember
+      1 -> consume
 
-binop :: Member Program r => Int -> (Int -> Int -> Int) -> Sem r ()
-binop q op = feed 2 q >>= \[x, y] -> consume >>= \m -> memorize m (x `op` y)
+feed :: Member Program r => Int -> [Int] -> Sem r [Int]
+feed n params = modes (take n $ params)
 
-program :: Member Program r => Sem r ()
+save :: Member Program r => Int -> Sem r ()
+save v = do
+  m <- consume
+  memorize m v
+
+program :: Members [Program, NonDet] r => Sem r ()
 program = do
   let continue = program
-  q <- consume
-  if q == 99
+  (params, op) <- (parameters &&& opcode) <$> consume
+  if op == 99
     then die
     else do
-      case opcode q of
-        1 -> binop q (+)
-        2 -> binop q (*)
-        3 -> consume >>= swallow
-        4 -> feed 1 q >>= (spit . head)
-        5 -> feed 2 q >>= \[x, m] -> yes x m
-        6 -> feed 2 q >>= \[x, m] -> no x m
-        7 -> binop q ((fromEnum .) . (<))
-        8 -> binop q ((fromEnum .) . (==))
+      case op of
+        1 -> do
+          [x, y] <- feed 2 params
+          save (x + y)
+        2 -> do
+          [x, y] <- feed 2 params
+          save (x * y)
+        3 -> do
+          m <- consume
+          swallow m
+        4 -> do
+          [x] <- feed 1 params
+          spit x
+        5 -> do
+          [x, to] <- feed 2 params
+          yes x to
+        6 -> do
+          [x, to] <- feed 2 params
+          no x to
+        7 -> do
+          [x, y] <- feed 2 params
+          save (if x < y then 1 else 0)
+        8 -> do
+          [x, y] <- feed 2 params
+          save (if x == y then 1 else 0)
       continue
 
 pop :: Member (State Int) r => Sem r Int
@@ -121,6 +141,7 @@ runAll mem id =
     . runWriter @[Int]
     . runState @Int 0
     . runState @Memory mem
+    . runNonDet @IO
     . runProgram id
     $ program
 
