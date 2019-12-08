@@ -25,9 +25,10 @@ import Polysemy.Writer
 import qualified Test
 
 data Variable = Value | Pointer
+  deriving (Show)
 
 data Opcode = Plus | Mul | Input | Yield | LessThan | Equals | IfTrueJump | IfFalseJump | Terminate
-  deriving (Eq)
+  deriving (Eq, Show)
 
 data Program m a where
   Spit :: Int -> Program m ()
@@ -142,7 +143,7 @@ runAll (pointer, mem) input =
   let (result, (pointer', (mem', _))) =
         run
           . runWriter @[Int]
-          . runState @Int 0
+          . runState @Int pointer
           . runState @Memory mem
           . runState @[Int] input
           . runNonDet @IO
@@ -184,7 +185,7 @@ solve2 = do
   let result =
         maximum
           [ runAmpsFeed (replicate (length perm) (0, mem)) 0 perm
-            | perm <- permutations [0 .. 4],
+            | perm <- permutations [5 .. 9],
               length (nub perm) == length perm
           ]
   print result
