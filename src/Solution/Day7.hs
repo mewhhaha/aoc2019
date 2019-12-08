@@ -134,20 +134,20 @@ runProgram = interpret $ \case
       Value -> pure
       Pointer -> from
 
-runAll :: Memory -> (Int, Int) -> Int
-runAll mem (phase, output) =
-  head
-    . fst
-    . run
-    . runWriter @[Int]
-    . runState @Int 0
-    . runState @[Int] [phase, output]
-    . runState @Memory mem
-    . runNonDet @IO
-    . runProgram
-    $ program
+runAll :: (Int, Memory) -> (Int, Int) -> Int
+runAll (pointer, mem) (phase, output) =
+  let (result, (pointer, (mem', _))) =
+        run
+          . runWriter @[Int]
+          . runState @Int 0
+          . runState @Memory mem
+          . runState @[Int] [phase, output]
+          . runNonDet @IO
+          . runProgram
+          $ program
+   in head result
 
-runAmps :: Memory -> Int -> [Int] -> Int
+runAmps :: (Int, Memory) -> Int -> [Int] -> Int
 runAmps = foldr . curry . runAll
 
 solve1 :: IO ()
@@ -155,7 +155,7 @@ solve1 = do
   mem <- input
   let result =
         maximum
-          [ runAmps mem 0 perm
+          [ runAmps (0, mem) 0 perm
             | perm <- permutations [0 .. 4],
               length (nub perm) == length perm
           ]
