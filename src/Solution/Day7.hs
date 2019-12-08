@@ -134,9 +134,9 @@ runProgram = interpret $ \case
       Value -> pure
       Pointer -> from
 
-runAll :: (Int, Memory) -> (Int, Int) -> Int
-runAll (pointer, mem) (phase, output) =
-  let (result, (pointer, (mem', _))) =
+runAll :: (Int, Memory) -> Int -> Int -> ([Int], (Int, Memory))
+runAll (pointer, mem) output phase =
+  let (result, (pointer', (mem', _))) =
         run
           . runWriter @[Int]
           . runState @Int 0
@@ -145,10 +145,10 @@ runAll (pointer, mem) (phase, output) =
           . runNonDet @IO
           . runProgram
           $ program
-   in head result
+   in (result, (pointer', mem'))
 
 runAmps :: (Int, Memory) -> Int -> [Int] -> Int
-runAmps = foldr . curry . runAll
+runAmps mem = foldl (\output x -> head . fst . runAll mem output $ x)
 
 solve1 :: IO ()
 solve1 = do
