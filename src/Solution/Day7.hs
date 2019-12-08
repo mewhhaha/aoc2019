@@ -12,9 +12,12 @@
 module Solution.Day7 where
 
 import Control.Arrow
+import Control.Monad
 import Data.List
 import Data.List.Split
 import qualified Data.Map as Map
+import Data.Maybe
+import Debug.Trace
 import Polysemy
 import Polysemy.NonDet
 import Polysemy.State
@@ -23,7 +26,7 @@ import qualified Test
 
 data Variable = Value | Pointer
 
-data Opcode = Plus | Mul | Input | Output | LessThan | Equals | IfTrueJump | IfFalseJump | Terminate
+data Opcode = Plus | Mul | Input | Yield | LessThan | Equals | IfTrueJump | IfFalseJump | Terminate
   deriving (Eq)
 
 data Program m a where
@@ -50,7 +53,7 @@ parseOpcode = toOpcode . read . reverse . take 2 . reverse . show
   where
     toOpcode = \case
       99 -> Terminate
-      x -> [Plus, Mul, Input, Output, IfTrueJump, IfFalseJump, LessThan, Equals] !! (x - 1)
+      x -> [Plus, Mul, Input, Yield, IfTrueJump, IfFalseJump, LessThan, Equals] !! (x - 1)
 
 parseVariables :: Int -> [Variable]
 parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
@@ -77,7 +80,7 @@ program = do
   (vars, opcode) <- (parseVariables &&& parseOpcode) <$> consume Value
   case opcode of
     Terminate -> pure ()
-    Output -> consumes (take 1 vars) >>= spit . head
+    Yield -> consumes (take 1 vars) >>= spit . head
     x -> do
       case x of
         Plus -> consumes (take 2 vars) >>= save . sum
@@ -134,21 +137,23 @@ runProgram = interpret $ \case
       Value -> pure
       Pointer -> from
 
-runAll :: (Int, Memory) -> Int -> Int -> ([Int], (Int, Memory))
-runAll (pointer, mem) output phase =
+runAll :: (Int, Memory) -> [Int] -> Maybe (Int, (Int, Memory))
+runAll (pointer, mem) input =
   let (result, (pointer', (mem', _))) =
         run
           . runWriter @[Int]
           . runState @Int 0
           . runState @Memory mem
-          . runState @[Int] [phase, output]
+          . runState @[Int] input
           . runNonDet @IO
           . runProgram
           $ program
-   in (result, (pointer', mem'))
+   in if null result
+        then Nothing
+        else Just (head result, (pointer', mem'))
 
 runAmps :: (Int, Memory) -> Int -> [Int] -> Int
-runAmps mem = foldl (\output x -> head . fst . runAll mem output $ x)
+runAmps state = foldl (\output phase -> fst . fromJust . runAll state $ [phase, output])
 
 solve1 :: IO ()
 solve1 = do
@@ -156,6 +161,29 @@ solve1 = do
   let result =
         maximum
           [ runAmps (0, mem) 0 perm
+            | perm <- permutations [0 .. 4],
+              length (nub perm) == length perm
+          ]
+  print result
+
+runAmpsFeed :: [(Int, Memory)] -> Int -> [Int] -> Int
+runAmpsFeed states output ps = go output $ (\(state, p) -> runAll state . (p :)) <$> zip states ps
+  where
+    unyield (inp, ss) f = case f [inp] of
+      Nothing -> Left inp
+      Just (out', s) -> Right (out', ss ++ [s])
+    go out =
+      either id (uncurry go . fmap (runAll <$>))
+        . foldM
+          unyield
+          (out, [])
+
+solve2 :: IO ()
+solve2 = do
+  mem <- input
+  let result =
+        maximum
+          [ runAmpsFeed (replicate (length perm) (0, mem)) 0 perm
             | perm <- permutations [0 .. 4],
               length (nub perm) == length perm
           ]
