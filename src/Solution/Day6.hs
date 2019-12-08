@@ -70,10 +70,10 @@ path graph = fromMaybe 0 $ go 0 (graph Map.! "COM")
   where
     go depth xs = case listToMaybe . filter (`elem` ["YOU", "SAN"]) $ xs of
       Nothing ->
-        case mapMaybe (\x -> Map.lookup x graph >>= go (depth + 1)) xs of
-          [] -> Nothing
-          [a] -> Just a
-          ys -> Just $ sum ys - depth * 2
+        let deeper = mapMaybe (\x -> Map.lookup x graph >>= go (depth + 1)) xs
+         in case deeper of
+              [y, s] -> Just $ y + s - depth * 2
+              ys -> listToMaybe ys
       _ -> Just depth
 
 test2 :: IO ()
