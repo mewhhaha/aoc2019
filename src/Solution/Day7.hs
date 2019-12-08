@@ -77,20 +77,12 @@ program = do
   (vars, opcode) <- (parseVariables &&& parseOpcode) <$> consume Value
   case opcode of
     Terminate -> pure ()
+    Output -> consumes (take 1 vars) >>= spit . head
     x -> do
       case x of
-        Plus -> do
-          [x, y] <- consumes $ take 2 vars
-          save (x + y)
-        Mul -> do
-          [x, y] <- consumes $ take 2 vars
-          save (x * y)
-        Input -> do
-          m <- consume Value
-          swallow m
-        Output -> do
-          [x] <- consumes $ take 1 vars
-          spit x
+        Plus -> consumes (take 2 vars) >>= save . sum
+        Mul -> consumes (take 2 vars) >>= save . product
+        Input -> consume Value >>= swallow
         IfTrueJump -> do
           [x, to] <- consumes $ take 2 vars
           if x /= 0 then jump to else pure ()
