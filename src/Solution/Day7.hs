@@ -127,7 +127,7 @@ pop :: Member (State [Int]) r => Sem r Int
 pop = do
   input <- get
   case input of
-    [] -> pure 0
+    [] -> undefined
     (x : xs) -> put xs >> pure x
 
 runProgram :: Members [State [Int], State Int, State Memory, Writer [Int]] r => Sem (Program : r) a -> Sem r a
@@ -142,21 +142,21 @@ runProgram = interpret $ \case
       Value -> pure
       Pointer -> from
 
-runAll :: Memory -> [Int] -> Int
-runAll mem input =
+runAll :: Memory -> (Int, Int) -> Int
+runAll mem (phase, output) =
   head
     . fst
     . run
     . runWriter @[Int]
     . runState @Int 0
-    . runState @[Int] input
+    . runState @[Int] [phase, output]
     . runState @Memory mem
     . runNonDet @IO
     . runProgram
     $ program
 
 runAmps :: Memory -> Int -> [Int] -> Int
-runAmps mem = foldl (\output x -> runAll mem [x, output])
+runAmps = foldr . curry . runAll
 
 solve1 :: IO ()
 solve1 = do
