@@ -24,7 +24,7 @@ test = Test.run fuelreq day1examples
 solve1 :: IO ()
 solve1 = do
   result <- sum . fmap fuelreq <$> input
-  putStrLn . show $ result
+  print result
 
 -- Question 2
 
@@ -34,4 +34,4 @@ fuelreqrec = sum . takeWhile (> 0) . tail . iterate fuelreq
 solve2 :: IO ()
 solve2 = do
   result <- sum . fmap fuelreqrec <$> input
-  putStrLn . show $ result
+  print result

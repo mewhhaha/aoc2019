@@ -15,7 +15,6 @@ import Control.Arrow
 import Data.List
 import Data.List.Split
 import qualified Data.Map as Map
-import Debug.Trace
 import Polysemy
 import Polysemy.NonDet
 import Polysemy.State
@@ -60,16 +59,13 @@ parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
     leftToRight = reverse
     dropOp = drop 2
     trailingZeros = (++ repeat '0')
-    toVariables = fmap (toVariable)
+    toVariables = fmap toVariable
     toVariable = \case
       '0' -> Pointer
       '1' -> Value
 
-modes :: Member Program r => [Variable] -> Sem r [Int]
-modes = mapM consume
-
-feed :: Member Program r => Int -> [Variable] -> Sem r [Int]
-feed n vars = modes (take n $ vars)
+consumes :: Member Program r => [Variable] -> Sem r [Int]
+consumes = mapM consume
 
 save :: Member Program r => Int -> Sem r ()
 save v = do
@@ -84,28 +80,28 @@ program = do
     x -> do
       case x of
         Plus -> do
-          [x, y] <- feed 2 vars
+          [x, y] <- consumes $ take 2 vars
           save (x + y)
         Mul -> do
-          [x, y] <- feed 2 vars
+          [x, y] <- consumes $ take 2 vars
           save (x * y)
         Input -> do
           m <- consume Value
           swallow m
         Output -> do
-          [x] <- feed 1 vars
+          [x] <- consumes $ take 1 vars
           spit x
         IfTrueJump -> do
-          [x, to] <- feed 2 vars
+          [x, to] <- consumes $ take 2 vars
           if x /= 0 then jump to else pure ()
         IfFalseJump -> do
-          [x, to] <- feed 2 vars
+          [x, to] <- consumes $ take 2 vars
           if x == 0 then jump to else pure ()
         LessThan -> do
-          [x, y] <- feed 2 vars
+          [x, y] <- consumes $ take 2 vars
           save (if x < y then 1 else 0)
         Equals -> do
-          [x, y] <- feed 2 vars
+          [x, y] <- consumes $ take 2 vars
           save (if x == y then 1 else 0)
       program
 
@@ -154,7 +150,7 @@ solve1 :: IO ()
 solve1 = do
   mem <- input
   let result = runAll mem 1
-  putStrLn $ show result
+  print result
 
 -- Question 2
 
@@ -162,4 +158,4 @@ solve2 :: IO ()
 solve2 = do
   mem <- input
   let result = runAll mem 5
-  putStrLn $ show result
+  print result

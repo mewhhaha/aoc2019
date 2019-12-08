@@ -28,7 +28,7 @@ test1 = Test.run validate1 day4examples1
 solve1 :: IO ()
 solve1 =
   let result = sum [1 | n <- [from .. to], validate1 n]
-   in putStrLn $ show result
+   in print result
 
 -- Question 2
 
@@ -50,4 +50,4 @@ test2 = Test.run validate2 day4examples2
 solve2 :: IO ()
 solve2 =
   let result = sum [1 | n <- [from .. to], validate2 n]
-   in putStrLn $ show result
+   in print result

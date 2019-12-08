@@ -69,7 +69,7 @@ crossings :: [Map.Map (Int, Int) [Int]] -> [((Int, Int), [Int])]
 crossings = filter ((> 1) . length . snd) . Map.toList . foldl1 (Map.unionWith (++))
 
 crossingBy :: Ord a => (((Int, Int), [Int]) -> a) -> [[Wire]] -> a
-crossingBy f = head . sort . fmap f . crossings . fmap follow
+crossingBy f = minimum . fmap f . crossings . fmap follow
 
 closest :: [[Wire]] -> Int
 closest = crossingBy (manhattan . fst)
@@ -80,7 +80,7 @@ test1 = Test.run closest day3examples1
 solve1 :: IO ()
 solve1 = do
   result <- closest <$> input
-  putStrLn $ show result
+  print result
 
 -- Question 2
 
@@ -111,4 +111,4 @@ fastest = crossingBy (sum . snd)
 solve2 :: IO ()
 solve2 = do
   result <- fastest <$> input
-  putStrLn $ show result
+  print result

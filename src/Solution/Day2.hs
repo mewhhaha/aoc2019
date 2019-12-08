@@ -35,7 +35,7 @@ test = Test.run (interpret 9 10) day2examples
 solve1 :: IO ()
 solve1 = do
   result <- interpret 12 2 <$> input
-  putStrLn . show $ result
+  print result
 
 -- Question 2
 
@@ -49,4 +49,4 @@ solve2 = do
               v <- [0 .. 99],
               interpret n v mem == 19690720
           ]
-  putStrLn . show $ result
+  print result
