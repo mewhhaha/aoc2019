@@ -163,12 +163,8 @@ solve1 = do
   mem <- input
   let result =
         maximum
-          [ runAmps mem 0 [a, b, c, d, e]
-            | a <- [0 .. 4],
-              b <- [0 .. 4],
-              c <- [0 .. 4],
-              d <- [0 .. 4],
-              e <- [0 .. 4],
-              length (nub [a, b, c, d, e]) == 5
+          [ runAmps mem 0 perm
+            | perm <- permutations [0 .. 4],
+              length (nub perm) == length perm
           ]
   print result
