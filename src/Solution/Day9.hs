@@ -64,8 +64,7 @@ parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
     leftToRight = reverse
     dropOp = drop 2
     trailingZeros = (++ repeat '0')
-    toVariables = fmap toVariable
-    toVariable = \case
+    toVariables = fmap $ \case
       '0' -> Position
       '1' -> Immediate
       '2' -> Relative
