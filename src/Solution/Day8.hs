@@ -3,13 +3,17 @@ module Solution.Day8 where
 import Data.List
 import Data.List.Split
 
+width = 25
+
+height = 6
+
 input :: IO [String]
-input = chunksOf (25 * 6) <$> readFile "input/day8.txt"
+input = chunksOf (width * height) <$> readFile "input/day8.txt"
 
 -- Question 1
 
-leastZeros :: [String] -> (Int, String)
-leastZeros = minimum . (fmap (length . filter (== '0')) >>= zip)
+leastZeros :: [String] -> String
+leastZeros = snd . minimum . (fmap (length . filter (== '0')) >>= zip)
 
 solve1 :: IO ()
 solve1 =
@@ -17,7 +21,6 @@ solve1 =
     layers <- input
     let result =
           (\s -> product $ length . (`filter` s) . (==) <$> ['1', '2'])
-            . snd
             . leastZeros
             $ layers
     print result
@@ -25,10 +28,10 @@ solve1 =
 -- Question 2
 
 apply :: [String] -> String
-apply = fmap (head . dropWhile (== '2')) . transpose
+apply = fmap (head . filter (/= '2')) . transpose
 
 format :: String -> String
-format = unlines . chunksOf 25 . fmap (\x -> if x == '0' then ' ' else '#')
+format = unlines . chunksOf width . fmap (\x -> if x == '0' then ' ' else '#')
 
 solve2 :: IO ()
 solve2 = do
