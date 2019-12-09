@@ -13,6 +13,7 @@ module Solution.Day9 where
 
 import Control.Arrow
 import Control.Monad
+import Data.Char
 import Data.List
 import Data.List.Split
 import qualified Data.Map as Map
@@ -24,11 +25,11 @@ import Polysemy.State
 import Polysemy.Writer
 import qualified Test
 
-data Variable = Immediate | Position | Relative
-  deriving (Show)
+data Variable = Position | Immediate | Relative
+  deriving (Show, Enum)
 
-data Opcode = Plus | Mul | Input | Yield | LessThan | Equals | IfTrueJump | IfFalseJump | Terminate | AdjustRelative
-  deriving (Eq, Show)
+data Opcode = Terminate | Plus | Mul | Input | Yield | IfTrueJump | IfFalseJump | LessThan | Equals | AdjustRelative
+  deriving (Eq, Show, Enum)
 
 data Program m a where
   Spit :: Integer -> Program m ()
@@ -36,7 +37,7 @@ data Program m a where
   Memorize :: Integer -> Integer -> Program m ()
   Consume :: Variable -> Program m Integer
   Jump :: Integer -> Program m ()
-  Relativise :: Integer -> Program m ()
+  Rethink :: Integer -> Program m ()
 
 makeSem ''Program
 
@@ -55,7 +56,7 @@ parseOpcode = toOpcode . read . reverse . take 2 . reverse . show
   where
     toOpcode = \case
       99 -> Terminate
-      x -> [Plus, Mul, Input, Yield, IfTrueJump, IfFalseJump, LessThan, Equals, AdjustRelative] !! (x - 1)
+      x -> toEnum x
 
 parseVariables :: Integer -> [Variable]
 parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
@@ -64,10 +65,7 @@ parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
     leftToRight = reverse
     dropOp = drop 2
     trailingZeros = (++ repeat '0')
-    toVariables = fmap $ \case
-      '0' -> Position
-      '1' -> Immediate
-      '2' -> Relative
+    toVariables = fmap $ toEnum . digitToInt
 
 consumes :: Member Program r => [Variable] -> Sem r [Integer]
 consumes = mapM consume
@@ -80,6 +78,7 @@ save v = do
 program :: Members [Program, NonDet] r => Sem r ()
 program = do
   (vars, opcode) <- (parseVariables &&& parseOpcode) <$> consume Immediate
+  trace (show $ take 4 vars) (pure ())
   case opcode of
     Terminate -> pure ()
     Yield -> consumes (take 1 vars) >>= spit . head
@@ -100,7 +99,7 @@ program = do
         Equals -> do
           [x, y] <- consumes $ take 2 vars
           save (if x == y then 1 else 0)
-        AdjustRelative -> consumes (take 1 vars) >>= relativise . head
+        AdjustRelative -> consumes (take 1 vars) >>= rethink . head
       program
 
 step :: Member (State ((Integer, Integer), Memory)) r => Sem r Integer
@@ -116,7 +115,7 @@ store :: Member (State ((Integer, Integer), Memory)) r => Integer -> Integer -> 
 store p v = modify @((Integer, Integer), Memory) (Map.insert p v <$>)
 
 from :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r Integer
-from = gets . (. snd) . flip (Map.!)
+from p = gets (fromMaybe 0 . Map.lookup p . snd)
 
 record :: Member (Writer [Integer]) r => Integer -> Sem r ()
 record = tell . (: [])
@@ -142,13 +141,13 @@ runProgram = interpret $ \case
   Memorize p x -> store p x
   Consume var -> step
     >>= from
-    >>= case var of
-      Immediate -> pure
-      Position -> from
-      Relative -> \p -> do
+    >>= \v -> case var of
+      Immediate -> pure v
+      Position -> from v
+      Relative -> do
         r <- relativeBase
-        from (r + p)
-  Relativise r -> offset r
+        from (r + v)
+  Rethink r -> offset r
 
 runAll :: ((Integer, Integer), Memory) -> [Integer] -> Maybe (Integer, ((Integer, Integer), Memory))
 runAll computer input =
@@ -164,16 +163,23 @@ runAll computer input =
         then Nothing
         else Just (head result, state)
 
-runRepeat mem =
-  iterate
-    ( \case
-        Nothing -> Nothing
-        Just (_, state) -> runAll state []
-    )
-    (runAll ((0, 0), mem) [1])
+exec input mem =
+  fmap fst . catMaybes . takeWhile isJust $
+    iterate
+      (>>= (`runAll` []) . snd)
+      (runAll ((0, 0), mem) input)
+
+day9examples =
+  [ (memory [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99], [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]),
+    (memory [1102, 34915192, 34915192, 7, 4, 7, 99, 0], [1219070632396864]),
+    (memory [104, 1125899906842624, 99], [1125899906842624])
+  ]
+
+test1 :: IO ()
+test1 = Test.run (exec []) day9examples
 
 solve1 :: IO ()
 solve1 = do
   mem <- input
-  let result = fmap fst . catMaybes . takeWhile isJust $ runRepeat mem
+  let result = exec [203] mem
   print result
