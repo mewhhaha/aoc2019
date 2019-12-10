@@ -167,18 +167,18 @@ runAll computer input =
         then Nothing
         else Just (head result, state)
 
+day9examples =
+  [ (memory [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99], [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]),
+    (memory [1102, 34915192, 34915192, 7, 4, 7, 99, 0], [1219070632396864]),
+    (memory [104, 1125899906842624, 99], [1125899906842624])
+  ]
+
 exec :: [Integer] -> Memory -> [Integer]
 exec input mem =
   fmap fst . catMaybes . takeWhile isJust $
     iterate
       (>>= (`runAll` []) . snd)
       (runAll ((0, 0), mem) input)
-
-day9examples =
-  [ (memory [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99], [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]),
-    (memory [1102, 34915192, 34915192, 7, 4, 7, 99, 0], [1219070632396864]),
-    (memory [104, 1125899906842624, 99], [1125899906842624])
-  ]
 
 test1 :: IO ()
 test1 = Test.run (exec []) day9examples
