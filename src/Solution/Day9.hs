@@ -130,8 +130,8 @@ receive = do
 offset :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r ()
 offset = modify . (first . second) . (+)
 
-relativeBase :: Member (State ((Integer, Integer), Memory)) r => Sem r Integer
-relativeBase = gets (snd . fst)
+relative :: Member (State ((Integer, Integer), Memory)) r => (Integer -> Sem r a) -> Integer -> Sem r a
+relative f p = gets (snd . fst) >>= f . (+ p)
 
 runProgram :: Members [State [Integer], State ((Integer, Integer), Memory), Writer [Integer]] r => Sem (Program : r) a -> Sem r a
 runProgram = interpret $ \case
@@ -140,17 +140,13 @@ runProgram = interpret $ \case
   Swallow -> receive
   Memorize mode p x -> case mode of
     Position -> store p x
-    Relative -> do
-      r <- relativeBase
-      store (r + p) x
+    Relative -> relative (`store` x) p
   Consume mode -> step
     >>= from
-    >>= \v -> case mode of
-      Immediate -> pure v
-      Position -> from v
-      Relative -> do
-        r <- relativeBase
-        from (r + v)
+    >>= case mode of
+      Immediate -> pure
+      Position -> from
+      Relative -> relative from
   Rethink r -> offset r
 
 runAll :: ((Integer, Integer), Memory) -> [Integer] -> Maybe (Integer, ((Integer, Integer), Memory))
