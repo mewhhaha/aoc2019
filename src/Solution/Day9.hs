@@ -25,7 +25,7 @@ import Polysemy.State
 import Polysemy.Writer
 import qualified Test
 
-data Variable = Position | Immediate | Relative
+data Mode = Position | Immediate | Relative
   deriving (Show, Enum)
 
 data Opcode = Terminate | Plus | Mul | Input | Yield | IfTrueJump | IfFalseJump | LessThan | Equals | AdjustRelative
@@ -33,9 +33,9 @@ data Opcode = Terminate | Plus | Mul | Input | Yield | IfTrueJump | IfFalseJump 
 
 data Program m a where
   Spit :: Integer -> Program m ()
-  Swallow :: Integer -> Program m ()
-  Memorize :: Integer -> Integer -> Program m ()
-  Consume :: Variable -> Program m Integer
+  Swallow :: Program m Integer
+  Memorize :: Mode -> Integer -> Integer -> Program m ()
+  Consume :: Mode -> Program m Integer
   Jump :: Integer -> Program m ()
   Rethink :: Integer -> Program m ()
 
@@ -58,48 +58,48 @@ parseOpcode = toOpcode . read . reverse . take 2 . reverse . show
       99 -> Terminate
       x -> toEnum x
 
-parseVariables :: Integer -> [Variable]
-parseVariables = toVariables . trailingZeros . dropOp . leftToRight . toDigits
+parseModes :: Integer -> [Mode]
+parseModes = toModes . trailingZeros . dropOp . leftToRight . toDigits
   where
     toDigits = show
     leftToRight = reverse
     dropOp = drop 2
     trailingZeros = (++ repeat '0')
-    toVariables = fmap $ toEnum . digitToInt
+    toModes = fmap $ toEnum . digitToInt
 
-consumes :: Member Program r => [Variable] -> Sem r [Integer]
+consumes :: Member Program r => [Mode] -> Sem r [Integer]
 consumes = mapM consume
 
-save :: Member Program r => Integer -> Sem r ()
-save v = do
+save :: Member Program r => Mode -> Integer -> Sem r ()
+save mode v = do
   m <- consume Immediate
-  memorize m v
+  memorize mode m v
 
 program :: Members [Program, NonDet] r => Sem r ()
 program = do
-  (vars, opcode) <- (parseVariables &&& parseOpcode) <$> consume Immediate
-  trace (show $ take 4 vars) (pure ())
+  (modes, opcode) <- (parseModes &&& parseOpcode) <$> consume Immediate
+  let mode x = (!! max 0 (x -1)) modes
   case opcode of
     Terminate -> pure ()
-    Yield -> consumes (take 1 vars) >>= spit . head
+    Yield -> consumes (take 1 modes) >>= spit . head
     x -> do
       case x of
-        Plus -> consumes (take 2 vars) >>= save . sum
-        Mul -> consumes (take 2 vars) >>= save . product
-        Input -> consume Immediate >>= swallow
+        Plus -> consumes (take 2 modes) >>= save (mode 3) . sum
+        Mul -> consumes (take 2 modes) >>= save (mode 3) . product
+        Input -> swallow >>= save (mode 1)
         IfTrueJump -> do
-          [x, to] <- consumes $ take 2 vars
+          [x, to] <- consumes $ take 2 modes
           if x /= 0 then jump to else pure ()
         IfFalseJump -> do
-          [x, to] <- consumes $ take 2 vars
+          [x, to] <- consumes $ take 2 modes
           if x == 0 then jump to else pure ()
         LessThan -> do
-          [x, y] <- consumes $ take 2 vars
-          save (if x < y then 1 else 0)
+          [x, y] <- consumes $ take 2 modes
+          save (mode 3) (if x < y then 1 else 0)
         Equals -> do
-          [x, y] <- consumes $ take 2 vars
-          save (if x == y then 1 else 0)
-        AdjustRelative -> consumes (take 1 vars) >>= rethink . head
+          [x, y] <- consumes $ take 2 modes
+          save (mode 3) (if x == y then 1 else 0)
+        AdjustRelative -> consume (mode 1) >>= rethink
       program
 
 step :: Member (State ((Integer, Integer), Memory)) r => Sem r Integer
@@ -137,11 +137,15 @@ runProgram :: Members [State [Integer], State ((Integer, Integer), Memory), Writ
 runProgram = interpret $ \case
   Spit x -> record x
   Jump p -> goto p
-  Swallow x -> receive >>= store x
-  Memorize p x -> store p x
-  Consume var -> step
+  Swallow -> receive
+  Memorize mode p x -> case mode of
+    Position -> store p x
+    Relative -> do
+      r <- relativeBase
+      store (r + p) x
+  Consume mode -> step
     >>= from
-    >>= \v -> case var of
+    >>= \v -> case mode of
       Immediate -> pure v
       Position -> from v
       Relative -> do
@@ -181,5 +185,13 @@ test1 = Test.run (exec []) day9examples
 solve1 :: IO ()
 solve1 = do
   mem <- input
-  let result = exec [203] mem
+  let result = exec [1] mem
+  print result
+
+-- Question 2
+
+solve2 :: IO ()
+solve2 = do
+  mem <- input
+  let result = exec [2] mem
   print result
