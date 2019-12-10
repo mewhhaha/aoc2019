@@ -167,6 +167,7 @@ runAll computer input =
         then Nothing
         else Just (head result, state)
 
+exec :: [Integer] -> Memory -> [Integer]
 exec input mem =
   fmap fst . catMaybes . takeWhile isJust $
     iterate
