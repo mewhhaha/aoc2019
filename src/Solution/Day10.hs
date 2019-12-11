@@ -17,8 +17,6 @@ import Test
 data Space = Empty | Asteroid
   deriving (Show, Ord, Eq)
 
-both f = first f >>> second f
-
 coordinates :: [String] -> Map.Map (Int, Int) Space
 coordinates = Map.fromList . concat . zipWith points [0 ..]
 
@@ -41,6 +39,8 @@ minMax (x, y) = (min x y, max x y)
 range :: Int -> Int -> (Int -> Maybe (Int, Int)) -> [(Int, Int)]
 range a b f = catMaybes $ f <$> [(min a b + 1) .. (max a b - 1)]
 
+sign :: Int -> Int
+sign 0 = 0
 sign x = if x > 0 then 1 else -1
 
 intersections :: (Int, Int) -> (Int, Int) -> [(Int, Int)]
