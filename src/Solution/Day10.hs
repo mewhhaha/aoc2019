@@ -1,10 +1,10 @@
-{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE TupleSections #-}
 
 module Solution.Day10 where
 
 import Control.Arrow
 import Data.Bool
+import Data.Function
 import Data.List
 import Data.List.Split
 import qualified Data.Map as Map
@@ -58,11 +58,14 @@ intersections (x, y) (x', y')
 sightOf :: Map.Map (Int, Int) Space -> (Int, Int) -> (Int, Int) -> Bool
 sightOf grid from to = all (isEmpty . (grid Map.!)) $ intersections from to
 
+asteroids :: Map.Map (Int, Int) Space -> [(Int, Int)]
+asteroids grid = [coord | (coord, s) <- Map.toList grid, not . isEmpty $ s]
+
 mostSightOf :: Map.Map (Int, Int) Space -> (Int, (Int, Int))
-mostSightOf grid = maximum $ bySights <$> asteroids
+mostSightOf grid = maximum $ bySights <$> asteroids'
   where
-    asteroids = [coord | (coord, s) <- Map.toList grid, not . isEmpty $ s]
-    bySights coord = (,coord) . length . filter (\a -> a /= coord && sightOf grid coord a) $ asteroids
+    asteroids' = asteroids grid
+    bySights coord = (,coord) . length . filter (\a -> a /= coord && sightOf grid coord a) $ asteroids'
 
 day10examples =
   [ ( coordinates
@@ -73,20 +76,6 @@ day10examples =
           "...##"
         ],
       (8, (3, 4))
-    ),
-    ( coordinates
-        [ "#.........",
-          "...A......",
-          "...B..a...",
-          ".EDCG....a",
-          "..F.c.b...",
-          ".....c....",
-          "..efd.c.gb",
-          ".......c..",
-          "....f...c.",
-          "...e..d..c"
-        ],
-      (6, (0, 0))
     ),
     ( coordinates
         [ "......#.#.",
@@ -159,41 +148,70 @@ day10examples =
 test1 :: IO ()
 test1 = Test.run mostSightOf day10examples
 
-t =
-  mapM_
-    print
-    $ transpose
-    $ chunksOf 10
-    $ fmap
-      ( \case
-          Empty -> '.'
-          Asteroid -> '#'
-          . snd
-      )
-    $ sort
-    $ Map.toList
-    $ Map.mapWithKey
-      ( \c x -> case x of
-          Empty -> Empty
-          Asteroid -> if sightOf testgrid (6, 3) c then Empty else Asteroid
-      )
-      testgrid
-
-testgrid =
-  coordinates
-    [ ".#..#..###",
-      "####.###.#",
-      "....###.#.",
-      "..###.##.#",
-      "##.##.#.#.",
-      "....###..#",
-      "..#.#..#.#",
-      "#..#.#.###",
-      ".##...##.#",
-      ".....#.#.."
-    ]
-
 solve1 :: IO ()
 solve1 = do
   spaces <- input
   print $ mostSightOf spaces
+
+-- Question 2
+
+angle :: RealFloat a => (Int, Int) -> (Int, Int) -> a
+angle (x, y) (x', y') =
+  let a = (atan2 (fromIntegral $ y - y') (fromIntegral $ x' - x) - (pi / 2)) * (-1)
+   in if a < 0 then 2 * pi + a else a
+
+shoot :: (Int, Int) -> Map.Map (Int, Int) Space -> [(Int, Int)]
+shoot station@(x, y) grid =
+  if null targets
+    then []
+    else
+      sortBy (compare `on` angle station) targets
+        ++ shoot
+          station
+          (foldl1 Map.union ((`Map.singleton` Empty) <$> targets) `Map.union` grid)
+  where
+    targets =
+      filter
+        ((&&) <$> (/= station) <*> sightOf grid station)
+        $ asteroids grid
+
+twohundreth :: (Int, Int) -> Map.Map (Int, Int) Space -> Int
+twohundreth = ((go . (!! 199)) .) . shoot
+  where
+    go (x, y) = x * 100 + y
+
+day2examples =
+  [ ( coordinates
+        [ ".#..##.###...#######",
+          "##.############..##.",
+          ".#.######.########.#",
+          ".###.#######.####.#.",
+          "#####.##.#.##.###.##",
+          "..#####..#.#########",
+          "####################",
+          "#.####....###.#.#.##",
+          "##.#################",
+          "#####.##.###..####..",
+          "..######..##.#######",
+          "####.##.####...##..#",
+          ".#####..#.######.###",
+          "##...#.##########...",
+          "#.##########.#######",
+          ".####.#.###.###.#.##",
+          "....##.##.###..#####",
+          ".#.#.###########.###",
+          "#.#.#.#####.####.###",
+          "###.##.####.##.#..##"
+        ],
+      802
+    )
+  ]
+
+test2 :: IO ()
+test2 = Test.run (twohundreth (11, 13)) day2examples
+
+solve2 :: IO ()
+solve2 = do
+  spaces <- input
+  let result = twohundreth (26, 29) spaces
+  print result
