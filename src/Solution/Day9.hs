@@ -130,8 +130,8 @@ receive = do
 offset :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r ()
 offset = modify . (first . second) . (+)
 
-relativeBase :: Member (State ((Integer, Integer), Memory)) r => Sem r Integer
-relativeBase = gets (snd . fst)
+relative :: Member (State ((Integer, Integer), Memory)) r => (Integer -> Sem r a) -> Integer -> Sem r a
+relative f p = gets (snd . fst) >>= f . (+ p)
 
 runProgram :: Members [State [Integer], State ((Integer, Integer), Memory), Writer [Integer]] r => Sem (Program : r) a -> Sem r a
 runProgram = interpret $ \case
@@ -140,17 +140,13 @@ runProgram = interpret $ \case
   Swallow -> receive
   Memorize mode p x -> case mode of
     Position -> store p x
-    Relative -> do
-      r <- relativeBase
-      store (r + p) x
+    Relative -> relative (`store` x) p
   Consume mode -> step
     >>= from
-    >>= \v -> case mode of
-      Immediate -> pure v
-      Position -> from v
-      Relative -> do
-        r <- relativeBase
-        from (r + v)
+    >>= case mode of
+      Immediate -> pure
+      Position -> from
+      Relative -> relative from
   Rethink r -> offset r
 
 runAll :: ((Integer, Integer), Memory) -> [Integer] -> Maybe (Integer, ((Integer, Integer), Memory))
@@ -167,17 +163,18 @@ runAll computer input =
         then Nothing
         else Just (head result, state)
 
-exec input mem =
-  fmap fst . catMaybes . takeWhile isJust $
-    iterate
-      (>>= (`runAll` []) . snd)
-      (runAll ((0, 0), mem) input)
-
 day9examples =
   [ (memory [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99], [109, 1, 204, -1, 1001, 100, 1, 100, 1008, 100, 16, 101, 1006, 101, 0, 99]),
     (memory [1102, 34915192, 34915192, 7, 4, 7, 99, 0], [1219070632396864]),
     (memory [104, 1125899906842624, 99], [1125899906842624])
   ]
+
+exec :: [Integer] -> Memory -> [Integer]
+exec input mem =
+  fmap fst . catMaybes . takeWhile isJust $
+    iterate
+      (>>= (`runAll` []) . snd)
+      (runAll ((0, 0), mem) input)
 
 test1 :: IO ()
 test1 = Test.run (exec []) day9examples
