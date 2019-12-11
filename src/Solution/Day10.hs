@@ -17,24 +17,23 @@ import Test
 data Space = Empty | Asteroid
   deriving (Show, Ord, Eq)
 
-coordinates :: [String] -> Map.Map (Int, Int) Space
-coordinates = Map.fromList . concat . zipWith points [0 ..]
+space :: Char -> Space
+space c = if c == '.' then Empty else Asteroid
 
 points :: Int -> String -> [((Int, Int), Space)]
 points y = zipWith (curry $ (,y) *** space) [0 ..]
 
-space :: Char -> Space
-space c = if c == '.' then Empty else Asteroid
+coordinates :: [String] -> Map.Map (Int, Int) Space
+coordinates = Map.fromList . concat . zipWith points [0 ..]
 
 input :: IO (Map.Map (Int, Int) Space)
 input = coordinates . lines <$> readFile "input/day10.txt"
 
+-- Question 1
+
 isEmpty :: Space -> Bool
 isEmpty Empty = True
 isEmpty _ = False
-
-minMax :: (Int, Int) -> (Int, Int)
-minMax (x, y) = (min x y, max x y)
 
 range :: Int -> Int -> (Int -> Maybe (Int, Int)) -> [(Int, Int)]
 range a b f = catMaybes $ f <$> [(min a b + 1) .. (max a b - 1)]
