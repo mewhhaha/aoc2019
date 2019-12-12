@@ -10,10 +10,11 @@
 {-# LANGUAGE TypeOperators #-}
 
 module Computer
-  ( runYield,
+  ( continue,
     exec,
     input,
     memory,
+    Memory,
   )
 where
 
@@ -50,8 +51,8 @@ type Memory = Map.Map Integer Integer
 memory :: [Integer] -> Memory
 memory = Map.fromList . zip [0 ..]
 
-input :: IO Memory
-input = memory . fmap read . splitOn "," <$> readFile "input/day9.txt"
+input :: String -> IO Memory
+input = (memory . fmap read . splitOn "," <$>) . readFile
 
 parseOpcode :: Integer -> Opcode
 parseOpcode = toOpcode . read . reverse . take 2 . reverse . show
@@ -151,8 +152,8 @@ runProgram = interpret $ \case
       Relative -> relative from
   Rethink r -> offset r
 
-runYield :: ((Integer, Integer), Memory) -> [Integer] -> Maybe (Integer, ((Integer, Integer), Memory))
-runYield computer input =
+continue :: ((Integer, Integer), Memory) -> [Integer] -> Maybe (Integer, ((Integer, Integer), Memory))
+continue computer input =
   let (result, (state, _)) =
         run
           . runWriter
@@ -169,5 +170,5 @@ exec :: [Integer] -> Memory -> [Integer]
 exec input mem =
   fmap fst . catMaybes . takeWhile isJust $
     iterate
-      (>>= (`runYield` []) . snd)
-      (runYield ((0, 0), mem) input)
+      (>>= (`continue` []) . snd)
+      (continue ((0, 0), mem) input)
