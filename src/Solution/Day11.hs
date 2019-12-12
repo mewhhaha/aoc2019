@@ -12,6 +12,7 @@ import Debug.Trace
 -- Question 1
 
 data Rotate = L | R
+  deriving (Enum)
 
 data Direction = N | E | S | W
   deriving (Enum)
@@ -37,7 +38,7 @@ instance Mem Color where
 
 instance Mem Rotate where
 
-  toMemory = undefined
+  toMemory = fromIntegral . fromEnum
 
   fromMemory = ([L, R] !!) . fromInteger
 
