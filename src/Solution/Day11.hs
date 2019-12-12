@@ -42,7 +42,7 @@ instance Mem Rotate where
   fromMemory = ([L, R] !!) . fromInteger
 
 move :: Rotate -> Robot -> Robot
-move r (Robot (x, y) dir) = uncurry Robot $ (update &&& id) (rotate dir)
+move r (Robot (x, y) dir) = uncurry Robot $ (update >>= (,)) (rotate dir)
   where
     offset = case r of
       L -> -1
