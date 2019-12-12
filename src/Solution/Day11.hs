@@ -71,10 +71,6 @@ runRobot start = go (Robot (0, 0) N) (Map.singleton (0, 0) start) . ((0, 0),)
                 (Map.insert (position robot) (fromMemory memColor) floor)
                 state'
 
-isWhite :: Color -> Bool
-isWhite White = True
-isWhite _ = False
-
 panels :: Map.Map (Int, Int) Color -> Int
 panels = Map.size
 
