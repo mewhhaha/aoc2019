@@ -77,7 +77,7 @@ panels = Map.size
 solve1 :: IO ()
 solve1 = do
   program <- input "input/day11.txt"
-  print $ panels $ runRobot Black ((0, 0), program)
+  print . panels $ runRobot Black ((0, 0), program)
 
 -- Question 2
 
