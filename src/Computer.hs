@@ -16,6 +16,7 @@ module Computer
     input,
     memory,
     Memory,
+    Computer,
   )
 where
 

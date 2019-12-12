@@ -58,8 +58,8 @@ move r (Robot (x, y) dir) = uncurry Robot $ (update >>= (,)) (rotate dir)
 position :: Robot -> (Int, Int)
 position (Robot p _) = p
 
-runRobot :: Color -> Memory -> Map.Map (Int, Int) Color
-runRobot start = go (Robot (0, 0) N) (Map.singleton (0, 0) start) . ((0, 0),)
+runRobot :: Color -> Computer -> Map.Map (Int, Int) Color
+runRobot start = go (Robot (0, 0) N) (Map.singleton (0, 0) start)
   where
     go robot floor state =
       let color = fromMaybe Black (Map.lookup (position robot) floor)
@@ -77,7 +77,7 @@ panels = Map.size
 solve1 :: IO ()
 solve1 = do
   program <- input "input/day11.txt"
-  print $ panels $ runRobot Black program
+  print $ panels $ runRobot Black ((0, 0), program)
 
 -- Question 2
 
@@ -89,9 +89,9 @@ paint (w, h) floor = mapM_ (putStrLn . fmap panel) painting
     panel pos = case fromMaybe Black $ Map.lookup pos floor of
       Black -> '.'
       White -> '#'
-    painting = fmap ((<$> [- h½ .. h½]) . (,)) [- w½ .. w½]
+    painting = fmap ((<$> [- h½ .. h½]) . flip (,)) [w½, w½ -1 .. - w½]
 
 solve2 :: IO ()
 solve2 = do
   program <- input "input/day11.txt"
-  paint (100, 100) $ runRobot White program
+  paint (100, 100) $ runRobot White ((0, 0), program)
