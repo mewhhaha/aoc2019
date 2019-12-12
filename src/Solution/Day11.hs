@@ -63,17 +63,13 @@ runRobot start = go (Robot (0, 0) N) (Map.singleton (0, 0) start) . ((0, 0),)
   where
     go robot floor state =
       let color = fromMaybe Black (Map.lookup (position robot) floor)
-          yield = do
-            (memColor, state') <- continue state [toMemory color]
-            (memDir, state'') <- continue state' []
-            return ([memColor, memDir], state'')
-       in case yield of
-            Nothing -> floor
-            Just ([memColor, memDir], state'') ->
+       in case continues 2 [toMemory color] state of
+            ([], _) -> floor
+            ([memColor, memDir], state') ->
               go
                 (move (fromMemory memDir) robot)
                 (Map.insert (position robot) (fromMemory memColor) floor)
-                state''
+                state'
 
 isWhite :: Color -> Bool
 isWhite White = True

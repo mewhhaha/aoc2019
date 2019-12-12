@@ -11,6 +11,7 @@
 
 module Computer
   ( continue,
+    continues,
     exec,
     input,
     memory,
@@ -47,6 +48,8 @@ data Program m a where
 makeSem ''Program
 
 type Memory = Map.Map Integer Integer
+
+type Computer = ((Integer, Integer), Memory)
 
 memory :: [Integer] -> Memory
 memory = Map.fromList . zip [0 ..]
@@ -165,6 +168,16 @@ continue computer input =
    in if null result
         then Nothing
         else Just (head result, state)
+
+continues :: Int -> [Integer] -> Computer -> ([Integer], Computer)
+continues n input state =
+  foldl (\(sum, _) (x, final) -> (sum ++ [x], final)) ([], state)
+    . catMaybes
+    . takeWhile isJust
+    . take n
+    $ iterate
+      (>>= (`continue` []) . snd)
+      (continue state input)
 
 exec :: [Integer] -> Memory -> [Integer]
 exec input mem =
