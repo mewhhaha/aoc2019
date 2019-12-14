@@ -1,6 +1,7 @@
 module Main where
 
+import Solution.Day12
 import Test
 
 main :: IO ()
-main = putStrLn "Hello World"
+main = solve2

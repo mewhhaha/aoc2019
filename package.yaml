@@ -24,6 +24,7 @@ dependencies:
 - split
 - polysemy
 - polysemy-plugin
+- parallel
 library:
   source-dirs: src
 

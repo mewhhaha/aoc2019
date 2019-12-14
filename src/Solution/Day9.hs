@@ -104,18 +104,18 @@ program = do
 
 step :: Member (State ((Integer, Integer), Memory)) r => Sem r Integer
 step = do
-  ((p, r), m) <- get
-  put ((p + 1, r), m)
+  ((p, r), m) <- get @((Integer, Integer), Memory)
+  put @((Integer, Integer), Memory) ((p + 1, r), m)
   pure p
 
 goto :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r ()
-goto = modify . (first . first) . const
+goto = modify @((Integer, Integer), Memory) . (first . first) . const
 
 store :: Member (State ((Integer, Integer), Memory)) r => Integer -> Integer -> Sem r ()
 store p v = modify @((Integer, Integer), Memory) (Map.insert p v <$>)
 
 from :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r Integer
-from p = gets (fromMaybe 0 . Map.lookup p . snd)
+from p = gets @((Integer, Integer), Memory) (fromMaybe 0 . Map.lookup p . snd)
 
 record :: Member (Writer [Integer]) r => Integer -> Sem r ()
 record = tell . (: [])
@@ -128,10 +128,10 @@ receive = do
     (x : xs) -> put xs >> pure x
 
 offset :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r ()
-offset = modify . (first . second) . (+)
+offset = modify @((Integer, Integer), Memory) . (first . second) . (+)
 
 relative :: Member (State ((Integer, Integer), Memory)) r => (Integer -> Sem r a) -> Integer -> Sem r a
-relative f p = gets (snd . fst) >>= f . (+ p)
+relative f p = gets @((Integer, Integer), Memory) (snd . fst) >>= f . (+ p)
 
 runProgram :: Members [State [Integer], State ((Integer, Integer), Memory), Writer [Integer]] r => Sem (Program : r) a -> Sem r a
 runProgram = interpret $ \case
