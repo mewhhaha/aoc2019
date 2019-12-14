@@ -25,6 +25,7 @@ dependencies:
 - polysemy
 - polysemy-plugin
 - parallel
+- megaparsec
 library:
   source-dirs: src
 
