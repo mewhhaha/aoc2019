@@ -1,5 +1,3 @@
-{-# LANGUAGE TupleSections #-}
-
 module Solution.Day11 where
 
 import Computer
@@ -23,12 +21,6 @@ data Mode = Paint | Move
 
 data Color = Black | White
   deriving (Enum, Show)
-
-class Mem ory where
-
-  toMemory :: ory -> Integer
-
-  fromMemory :: Integer -> ory
 
 instance Mem Color where
 

@@ -17,6 +17,7 @@ module Computer
     memory,
     Memory,
     Computer,
+    Mem (..),
   )
 where
 
@@ -47,6 +48,12 @@ data Program m a where
   Rethink :: Integer -> Program m ()
 
 makeSem ''Program
+
+class Mem ory where
+
+  toMemory :: ory -> Integer
+
+  fromMemory :: Integer -> ory
 
 type Memory = Map.Map Integer Integer
 

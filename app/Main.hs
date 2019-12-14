@@ -1,6 +1,6 @@
 module Main where
 
-import Solution.Day12
+import Solution.Day13
 import Test
 
 main :: IO ()
