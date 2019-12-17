@@ -25,6 +25,8 @@ import qualified Test
 import Text.Megaparsec (Parsec, errorBundlePretty, many, parse, sepBy)
 import Text.Megaparsec.Char (digitChar, newline, space1, string, upperChar)
 
+-- Question 1
+
 data Element = Element {getAmount :: Integer, getName :: String}
   deriving (Show)
 
@@ -80,8 +82,8 @@ leftovers n name = do
   stash $ Element stashed' name
   return n'
 
-exhaust :: Members [Backpack, Cookbook] r => Sem r Integer
-exhaust = go (Element 1 "FUEL")
+fuelToOre :: Members [Backpack, Cookbook] r => Integer -> Sem r Integer
+fuelToOre n = go (Element n "FUEL")
   where
     go :: Members [Backpack, Cookbook] r => Element -> Sem r Integer
     go (Element 0 _) = return 0
@@ -144,10 +146,35 @@ day14examples =
   ]
 
 test1 :: IO ()
-test1 = Test.run (flip runAll exhaust . toCookbook) day14examples
+test1 = Test.run (flip runAll (fuelToOre 1) . toCookbook) day14examples
 
 solve1 :: IO ()
 solve1 = do
   cookbook <- toCookbook <$> input
-  let result = runAll cookbook exhaust
+  let result = runAll cookbook (fuelToOre 1)
+  print result
+
+-- Question 2
+
+trillion = 1000000000000
+
+binsearch cookbook = go
+  where
+    go top bot
+      | top - bot == 1 = bot
+      | top == bot = top
+      | otherwise =
+        let half = (top - bot) `div` 2
+            middle = top - half
+            result = runAll cookbook (fuelToOre middle)
+         in case result of
+              x
+                | x > trillion -> go (top - half) bot
+                | x < trillion -> go top (bot + half)
+                | otherwise -> x
+
+solve2 :: IO ()
+solve2 = do
+  cookbook <- toCookbook <$> input
+  let result = binsearch cookbook trillion 1
   print result
