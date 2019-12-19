@@ -116,20 +116,20 @@ program = do
         AdjustRelative -> consume (mode 1) >>= rethink
       program
 
-step :: Member (State ((Integer, Integer), Memory)) r => Sem r Integer
+step :: Member (State Computer) r => Sem r Integer
 step = do
-  ((p, r), m) <- get @((Integer, Integer), Memory)
+  ((p, r), m) <- get @Computer
   put ((p + 1, r), m)
   pure p
 
-goto :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r ()
-goto = modify @((Integer, Integer), Memory) . (first . first) . const
+goto :: Member (State Computer) r => Integer -> Sem r ()
+goto = modify @Computer . (first . first) . const
 
-store :: Member (State ((Integer, Integer), Memory)) r => Integer -> Integer -> Sem r ()
-store p v = modify @((Integer, Integer), Memory) (Map.insert p v <$>)
+store :: Member (State Computer) r => Integer -> Integer -> Sem r ()
+store p v = modify @Computer (Map.insert p v <$>)
 
-from :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r Integer
-from p = gets @((Integer, Integer), Memory) (fromMaybe 0 . Map.lookup p . snd)
+from :: Member (State Computer) r => Integer -> Sem r Integer
+from p = gets @Computer (fromMaybe 0 . Map.lookup p . snd)
 
 record :: Member (Writer [Integer]) r => Integer -> Sem r ()
 record = tell . (: [])
@@ -141,13 +141,13 @@ receive = do
     [] -> undefined
     (x : xs) -> put xs >> pure x
 
-offset :: Member (State ((Integer, Integer), Memory)) r => Integer -> Sem r ()
-offset = modify @((Integer, Integer), Memory) . (first . second) . (+)
+offset :: Member (State Computer) r => Integer -> Sem r ()
+offset = modify @Computer . (first . second) . (+)
 
-relative :: Member (State ((Integer, Integer), Memory)) r => (Integer -> Sem r a) -> Integer -> Sem r a
-relative f p = gets @((Integer, Integer), Memory) (snd . fst) >>= f . (+ p)
+relative :: Member (State Computer) r => (Integer -> Sem r a) -> Integer -> Sem r a
+relative f p = gets @Computer (snd . fst) >>= f . (+ p)
 
-runProgram :: Members [State [Integer], State ((Integer, Integer), Memory), Writer [Integer]] r => Sem (Program : r) a -> Sem r a
+runProgram :: Members [State [Integer], State Computer, Writer [Integer]] r => Sem (Program : r) a -> Sem r a
 runProgram = interpret $ \case
   Spit x -> record x
   Jump p -> goto p
@@ -163,7 +163,7 @@ runProgram = interpret $ \case
       Relative -> relative from
   Rethink r -> offset r
 
-continue :: ((Integer, Integer), Memory) -> [Integer] -> Maybe (Integer, ((Integer, Integer), Memory))
+continue :: Computer -> [Integer] -> Maybe (Integer, Computer)
 continue computer input =
   let (result, (state, _)) =
         run
