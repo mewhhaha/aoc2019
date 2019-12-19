@@ -167,7 +167,7 @@ runPaint = intercept $ \case
 runRobot program =
   run
     . runState (Graph Nothing unexplored (Set.singleton start))
-    . runPaint
+    -- . runPaint
     . runCarta
     . runState @Computer ((0, 0), program)
     . runAction
@@ -181,3 +181,17 @@ solve1 = do
   program <- input "input/day15.txt"
   let (_, (_, p)) = runRobot program
   print $ length p
+
+-- Question 2
+
+maxDepth :: Set.Set Node -> Node -> Integer
+maxDepth e node = case filter (`Set.member` e) . calcNeighbours $ node of
+  [] -> 0
+  xs -> 1 + maximum (maxDepth (Set.delete node e) <$> xs)
+
+solve2 :: IO ()
+solve2 = do
+  program <- input "input/day15.txt"
+  let (Graph (Just o) _ e, _) = runRobot program
+      minutes = maxDepth e o
+  print minutes
