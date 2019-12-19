@@ -107,13 +107,15 @@ runCookbook :: Member (Reader (Map.Map String (Integer -> (Integer, [Element])))
 runCookbook = interpret $ \case
   Recipe name -> asks (Map.! name)
 
-runAll cookbook =
+runRequiredOre :: Map.Map String (Integer -> (Integer, [Element])) -> Integer -> Integer
+runRequiredOre cookbook =
   snd
     . run
-    . runReader cookbook
-    . runState mempty
+    . runState @(Map.Map String Integer) mempty
     . runBackpack
+    . runReader cookbook
     . runCookbook
+    . requiredOre
 
 input :: IO [Reaction]
 input = do
@@ -146,12 +148,12 @@ day14examples =
   ]
 
 test1 :: IO ()
-test1 = Test.run (flip runAll (requiredOre 1) . toCookbook) day14examples
+test1 = Test.run (flip runRequiredOre 1 . toCookbook) day14examples
 
 solve1 :: IO ()
 solve1 = do
   cookbook <- toCookbook <$> input
-  let result = runAll cookbook (requiredOre 1)
+  let result = runRequiredOre cookbook 1
   print result
 
 -- Question 2
@@ -166,7 +168,7 @@ binsearch cookbook = go
       | otherwise =
         let half = (top - bot) `div` 2
             middle = top - half
-            result = runAll cookbook (requiredOre middle)
+            result = runRequiredOre cookbook middle
          in case result of
               x
                 | x > trillion -> go (top - half) bot

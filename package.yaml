@@ -1,13 +1,13 @@
-name:                aoc2019
-version:             0.1.0.0
-github:              "https://github.com/mewhhaha/aoc2019"
-license:             BSD3
-author:              "Jacob Torrång"
-maintainer:          "kopatheonlyone@hotmail.com"
-copyright:           "2019 Jacob Torrång"
+name: aoc2019
+version: 0.1.0.0
+github: "https://github.com/mewhhaha/aoc2019"
+license: BSD3
+author: "Jacob Torrång"
+maintainer: "kopatheonlyone@hotmail.com"
+copyright: "2019 Jacob Torrång"
 
 extra-source-files:
-- README.md
+  - README.md
 
 # Metadata used when publishing your package
 # synopsis:            Short description of your package
@@ -16,27 +16,28 @@ extra-source-files:
 # To avoid duplicated efforts in documentation and dealing with the
 # complications of embedding Haddock markup inside cabal files, it is
 # common to point users to the README.md file.
-description:         Please see the README on GitHub at <https://github.com/mewhhaha/aoc2019#readme>
+description: Please see the README on GitHub at <https://github.com/mewhhaha/aoc2019#readme>
 
 dependencies:
-- base >= 4.7 && < 5
-- containers
-- split
-- polysemy
-- polysemy-plugin
-- parallel
-- megaparsec
+  - base >= 4.7 && < 5
+  - containers
+  - split
+  - polysemy
+  - polysemy-plugin
+  - parallel
+  - megaparsec
+  - monad-loops
 library:
   source-dirs: src
 
 executables:
   adventOfCode2019-exe:
-    main:                Main.hs
-    source-dirs:         app
+    main: Main.hs
+    source-dirs: app
     ghc-options:
-    - -threaded
-    - -rtsopts
-    - -with-rtsopts=-N
-    - -fplugin=Polysemy.Plugin
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -fplugin=Polysemy.Plugin
     dependencies:
-    - aoc2019
+      - aoc2019
